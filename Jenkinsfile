@@ -9,6 +9,14 @@ pipeline {
     stages {
         stage('build') {
             steps {
+                sh 'echo "Hello World"'
+
+                sh '''
+                    echo "Running multiple shell steps"
+                    pwd
+                    ls -lah
+                '''
+
                 sh 'mvn --version'
             }
         }
