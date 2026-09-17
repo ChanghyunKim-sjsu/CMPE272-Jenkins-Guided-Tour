@@ -16,27 +16,43 @@ pipeline {
                 echo "Building ${APP_NAME}"
 
                 sh '''
-                    mkdir -p build/output
-                    echo "Build completed for $APP_NAME" > build/output/result.txt
-                    cat build/output/result.txt
+                    mkdir -p build
+                    echo "Application package for $APP_NAME" > build/application.txt
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+                sh 'test -f build/application.txt'
+                echo 'Tests passed!'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying application...'
+
+                sh '''
+                    mkdir -p deployment
+                    cp build/application.txt deployment/application.txt
+
+                    echo "Deployed $APP_NAME successfully"
+                    echo "Deployment environment: staging"
+                    ls -lah deployment/
                 '''
             }
         }
     }
 
     post {
-        always {
-            echo 'Pipeline execution has finished.'
-            echo 'Cleaning up the workspace...'
-            deleteDir()
-        }
-
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'Build, Test, and Deploy completed successfully!'
         }
 
         failure {
-            echo 'Pipeline failed.'
+            echo 'Pipeline failed before deployment completed.'
         }
     }
 }
