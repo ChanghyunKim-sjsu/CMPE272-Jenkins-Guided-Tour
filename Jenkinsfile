@@ -11,39 +11,14 @@ pipeline {
     }
 
     stages {
-        stage('Test') {
+        stage('Build') {
             steps {
-                echo 'Creating test results...'
+                echo "Building ${APP_NAME}"
 
                 sh '''
-                    mkdir -p build/reports
-
-                    cat > build/reports/test-results.xml <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="CMPE272Demo"
-           tests="2"
-           failures="0"
-           errors="0"
-           skipped="0">
-    <testcase classname="DemoTest" name="testPipeline"/>
-    <testcase classname="DemoTest" name="testEnvironment"/>
-</testsuite>
-EOF
-                '''
-            }
-        }
-
-        stage('Build Artifact') {
-            steps {
-                echo 'Creating build artifact...'
-
-                sh '''
-                    mkdir -p build/libs
-                    echo "Application: $APP_NAME" > build/libs/build-info.txt
-                    echo "Course: $COURSE" >> build/libs/build-info.txt
-                    echo "Build Number: $BUILD_NUMBER" >> build/libs/build-info.txt
-
-                    cat build/libs/build-info.txt
+                    mkdir -p build/output
+                    echo "Build completed for $APP_NAME" > build/output/result.txt
+                    cat build/output/result.txt
                 '''
             }
         }
@@ -51,10 +26,17 @@ EOF
 
     post {
         always {
-            archiveArtifacts artifacts: 'build/libs/**/*',
-                             fingerprint: true
+            echo 'Pipeline execution has finished.'
+            echo 'Cleaning up the workspace...'
+            deleteDir()
+        }
 
-            junit 'build/reports/**/*.xml'
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed.'
         }
     }
 }
