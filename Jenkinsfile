@@ -1,5 +1,9 @@
 pipeline {
-    agent none
+    agent {
+        docker {
+            image 'maven:3.9.16-eclipse-temurin-21-alpine'
+        }
+    }
 
     environment {
         APP_NAME = 'CMPE272-Jenkins-Demo'
@@ -7,36 +11,50 @@ pipeline {
     }
 
     stages {
-        stage('Java Environment') {
-            agent {
-                docker {
-                    image 'maven:3.9.16-eclipse-temurin-21-alpine'
-                }
-            }
-
+        stage('Test') {
             steps {
-                echo "Application: ${APP_NAME}"
-                echo "Course: ${COURSE}"
+                echo 'Creating test results...'
 
                 sh '''
-                    echo "APP_NAME from shell: $APP_NAME"
-                    echo "COURSE from shell: $COURSE"
-                    mvn --version
+                    mkdir -p build/reports
+
+                    cat > build/reports/test-results.xml <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="CMPE272Demo"
+           tests="2"
+           failures="0"
+           errors="0"
+           skipped="0">
+    <testcase classname="DemoTest" name="testPipeline"/>
+    <testcase classname="DemoTest" name="testEnvironment"/>
+</testsuite>
+EOF
                 '''
             }
         }
 
-        stage('Node Environment') {
-            agent {
-                docker {
-                    image 'node:24.21.0-alpine3.24'
-                }
-            }
-
+        stage('Build Artifact') {
             steps {
-                echo "Running ${APP_NAME} inside Node.js container"
-                sh 'node --version'
+                echo 'Creating build artifact...'
+
+                sh '''
+                    mkdir -p build/libs
+                    echo "Application: $APP_NAME" > build/libs/build-info.txt
+                    echo "Course: $COURSE" >> build/libs/build-info.txt
+                    echo "Build Number: $BUILD_NUMBER" >> build/libs/build-info.txt
+
+                    cat build/libs/build-info.txt
+                '''
             }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'build/libs/**/*',
+                             fingerprint: true
+
+            junit 'build/reports/**/*.xml'
         }
     }
 }
